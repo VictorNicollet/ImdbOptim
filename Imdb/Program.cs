@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Imdb
@@ -61,6 +62,8 @@ namespace Imdb
         /// </summary>        
         private static bool NextWord(byte[] buffer, int length, ref int start, out int end)
         {
+            var discard = false;
+
             for (end = start; end < length; ++end)
             {
                 var c = buffer[end];
@@ -77,8 +80,10 @@ namespace Imdb
                 if (c == ' ' || c == ',' || c == '.' || c == '\n' || c == '\r')
                 {
                     // Split character found. If we have at least one character, then we found a word.
-                    if (start < end) return true;
+                    if (start < end && !discard) return true;
+
                     // Otherwise, start looking from the next position.
+                    discard = false;
                     start = end + 1;
                     continue;
                 }
@@ -90,7 +95,7 @@ namespace Imdb
                     c == '>' || c == '|' || c == '?' || c == '-' ||
                     c == '_' || c == '&')
                 {
-                    start = end + 1;
+                    discard = true;
                 }
             }
 
@@ -105,6 +110,7 @@ namespace Imdb
 
             while (NextWord(buffer, length, ref start, out end))
             {
+                //Console.WriteLine(Encoding.UTF8.GetString(buffer, start, end - start));
                 sc.Count(buffer, start, end - start);
                 start = end;
             }
@@ -221,7 +227,7 @@ namespace Imdb
                 Console.WriteLine("{0}: {1}", t.Key, t.Value);
         }
 
-        private const int TopCount = 10;
+        private const int TopCount = 100;
 
         #region Comparison
 
@@ -242,7 +248,7 @@ namespace Imdb
                     TrackWordsOccurrence(result, word);
                 }
             }
-
+            
             foreach (var t in result
                 .OrderByDescending(kv => kv.Value)
                 .Take((int) TopCount))
